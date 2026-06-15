@@ -46,4 +46,6 @@ Enter a city name when prompted. Type `history` to view the latest search histor
 
 - The app saves the last 5 searches to `history.json`.
 - Make sure `.env` is not committed to version control.
-
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
