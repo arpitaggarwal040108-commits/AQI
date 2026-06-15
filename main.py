@@ -112,8 +112,17 @@ def weather_fn(city):
         response.raise_for_status()
         data_py = response.json()
 
-    except requests.exceptions.RequestException:
-        print("Unable to connect to the weather service.")
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            print(f"City '{city}' not found. Please try another city.")
+        else:
+            print(f"Weather API error: {e.response.status_code}")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"Unable to connect to weather service: {str(e)}")
+        return None
+    except ValueError:
+        print("Invalid response from weather service.")
         return None
 
     temp = data_py.get("main", {}).get("temp", "N/A")
@@ -135,11 +144,21 @@ def weather_fn(city):
         response2.raise_for_status()
         data_aqi = response2.json()
 
-    except requests.exceptions.RequestException:
-        print("Unable to fetch AQI data.")
+    except requests.exceptions.HTTPError as e:
+        print(f"AQI API error: {e.response.status_code}")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"Unable to fetch AQI data: {str(e)}")
+        return None
+    except ValueError:
+        print("Invalid AQI response from service.")
         return None
 
-    aqi = data_aqi["list"][0]["main"]["aqi"]
+    try:
+        aqi = data_aqi["list"][0]["main"]["aqi"]
+    except (KeyError, IndexError):
+        print("Could not parse AQI data.")
+        return None
 
     status, advisory = AQI_ADVISORY.get(
         aqi,
@@ -187,6 +206,12 @@ def print_weather_fn(city, data):
 # ================= MAIN =================
 
 def main():
+
+    # Ensure .env is loaded and API key is available at runtime
+    global API_KEY
+    if not API_KEY:
+        load_dotenv()
+        API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
     if not API_KEY:
         print("OPENWEATHER_API_KEY not found in .env file.")
